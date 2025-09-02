@@ -9,7 +9,11 @@
 - [ ] Add security best practices
 - [ ] Add more examples of usage
 
-
+### To bring up the project
+- Docker and Docker-compose
+- Virtual Threads
+- Queue
+- Use my kafka service (notification)
 
 ## How to test v1
 1. Start gradle
