@@ -32,6 +32,7 @@ public class UrlShortener {
     public static class GetHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            System.out.println("CHEGOU AQUI");
             if ("GET".equals(exchange.getRequestMethod())) {
                 String path = exchange.getRequestURI().toString();
                 String originalUrl = urlMap.get("http://localhost:8080" + path);
@@ -47,5 +48,5 @@ public class UrlShortener {
                 exchange.sendResponseHeaders(405, -1); // Method Not Allowed
             }
         }
-    }}
+    }
 }
