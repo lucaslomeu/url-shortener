@@ -15,6 +15,7 @@
 - Virtual Threads
 - Queue
 - Use my kafka service (notification)
+- Hashing algorithm (md5, sha256, etc) to generate short url 
 
 ## How to test v1
 1. Start gradle
