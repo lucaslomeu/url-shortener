@@ -8,6 +8,7 @@
 - [ ] Add monitoring and logging
 - [ ] Add security best practices
 - [ ] Add more examples of usage
+- [ ] Endpoint to get url info (clicks, creation date, etc)
 
 ### To bring up the project
 - Docker and Docker-compose
