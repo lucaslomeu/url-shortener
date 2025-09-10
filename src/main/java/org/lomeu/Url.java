@@ -1,4 +1,7 @@
 package org.lomeu;
 
-public record Url (int id, String shortCode, String originalUrl) {
-}
+public record Url (
+        int id,
+        String shortCode,
+        String originalUrl)
+{ }

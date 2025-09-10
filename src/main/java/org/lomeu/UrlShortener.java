@@ -12,7 +12,6 @@ import java.util.UUID;
 
 public class UrlShortener {
     private static final Map<String, String> urlMap = new HashMap<>();
-    private static int counter = 1;
 
     // Post Handler
     public static class PostHandler implements HttpHandler {

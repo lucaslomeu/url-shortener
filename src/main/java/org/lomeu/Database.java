@@ -34,10 +34,14 @@ public class Database {
         try (Connection connection = getConnection()) {
             PreparedStatement stmt = connection.prepareStatement(selectSql);
             stmt.setString(1, shortCode);
-            var rs = stmt.executeQuery();
+            var response = stmt.executeQuery(); // pq var?
 
-            if (rs.next()) {
-                return new Url(rs.getInt("id"), rs.getString("short_code"), rs.getString("original_url"));
+            if (response.next()) {
+                return new Url(
+                    response.getInt("id"),
+                    response.getString("short_code"),
+                    response.getString("original_url")
+                );
             }
         } catch (SQLException e) {
             e.printStackTrace();
