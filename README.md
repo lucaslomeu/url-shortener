@@ -9,6 +9,7 @@
 - [ ] Add security best practices
 - [ ] Add more examples of usage
 - [ ] Endpoint to get url info (clicks, creation date, etc)
+- [ ] Add params in properties file
 
 ### To bring up the project
 - Docker and Docker-compose
