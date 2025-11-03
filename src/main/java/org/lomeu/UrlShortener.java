@@ -7,23 +7,21 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class UrlShortener {
-    private static final Map<String, String> urlMap = new HashMap<>();
-
     // Post Handler
     public static class PostHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             if ("POST".equals(exchange.getRequestMethod())) {
                 InputStream inputStream = exchange.getRequestBody();
-                StringBuilder requestBody = new StringBuilder();
                 String originalUrl;
 
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                     originalUrl = reader.readLine();
                 } catch (IOException e) {
                     // Handle the exception
@@ -70,6 +68,17 @@ public class UrlShortener {
                     exchange.getResponseBody().close();
                     return;
                 }
+                exchange.getResponseBody().close();
+            } else {
+                exchange.sendResponseHeaders(405, -1); // Method Not Allowed
+            }
+        }
+    }
+
+    public static class StatsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("GET".equals(exchange.getRequestMethod())) {
                 exchange.getResponseBody().close();
             } else {
                 exchange.sendResponseHeaders(405, -1); // Method Not Allowed

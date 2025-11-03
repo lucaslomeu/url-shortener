@@ -9,6 +9,7 @@
 - [ ] Add security best practices
 - [ ] Add more examples of usage
 - [ ] Endpoint to get url info (clicks, creation date, etc)
+- [ ] Create relational table with url info (id, url_id, creation_date, clicks, updated_at, etc)
 - [ ] Add params in properties file
 
 ### To bring up the project

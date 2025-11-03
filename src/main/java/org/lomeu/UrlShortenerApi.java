@@ -15,6 +15,7 @@ public class UrlShortenerApi {
         String apiPrefix = "/api/v1";
         server.createContext(apiPrefix + "/shorten", new UrlShortener.PostHandler());
         server.createContext(apiPrefix + "/{shortCode}", new UrlShortener.GetHandler());
+        server.createContext(apiPrefix + "/stats/{shortCode}", new UrlShortener.StatsHandler());
 
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
