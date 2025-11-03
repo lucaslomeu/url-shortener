@@ -20,8 +20,8 @@ public class UrlShortener {
         public void handle(HttpExchange exchange) throws IOException {
             if ("POST".equals(exchange.getRequestMethod())) {
                 InputStream inputStream = exchange.getRequestBody();
-               StringBuilder requestBody = new StringBuilder();
-               String originalUrl;
+                StringBuilder requestBody = new StringBuilder();
+                String originalUrl;
 
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
                     originalUrl = reader.readLine();
