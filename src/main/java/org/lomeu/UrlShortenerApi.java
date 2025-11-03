@@ -11,8 +11,10 @@ public class UrlShortenerApi {
         // Create HTTP server
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
 
-        server.createContext("/shorten", new UrlShortener.PostHandler());
-        server.createContext("/", new UrlShortener.GetHandler());
+        // API Endpoints with versioning
+        String apiPrefix = "/api/v1";
+        server.createContext(apiPrefix + "/shorten", new UrlShortener.PostHandler());
+        server.createContext(apiPrefix + "/{shortCode}", new UrlShortener.GetHandler());
 
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
