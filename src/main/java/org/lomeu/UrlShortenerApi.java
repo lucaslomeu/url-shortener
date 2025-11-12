@@ -14,7 +14,7 @@ public class UrlShortenerApi {
         // API Endpoints with versioning
         String apiPrefix = "/api/v1";
         server.createContext(apiPrefix + "/shorten", new UrlShortener.PostHandler());
-        server.createContext(apiPrefix + "/{shortCode}", new UrlShortener.GetHandler());
+        server.createContext(apiPrefix + "/", new UrlShortener.GetHandler());
         server.createContext(apiPrefix + "/stats/{shortCode}", new UrlShortener.StatsHandler());
 
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());

@@ -1,4 +1,5 @@
 ### TODO:
+
 - [ ] Add project description
 - [ ] Add excalidraw with architecture diagram
 - [ ] Implement index postgres
@@ -11,26 +12,32 @@
 - [ ] Endpoint to get url info (clicks, creation date, etc)
 - [ ] Create relational table with url info (id, url_id, creation_date, clicks, updated_at, etc)
 - [ ] Add params in properties file
+- [ ] Implement cache (redis, caffeine, etc)
 
 ### To bring up the project
+
 - Docker and Docker-compose
 - Virtual Threads
 - Queue
 - Use my kafka service (notification)
-- Hashing algorithm (md5, sha256, etc) to generate short url 
+- Hashing algorithm (md5, sha256, etc) to generate short url
 
 ## How to test v1
+
 1. Start gradle
+
 ```
 ./gradlew run
 ```
 
 2. Run curl command
+
 ```
 curl -X POST http://localhost:8080/shorten -d "http://www.exemplo.com"
 ```
 
 3. Get the original URL with the short URL
+
 ```
 curl http://localhost:8080/1
 ```

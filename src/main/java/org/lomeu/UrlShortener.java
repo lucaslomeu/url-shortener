@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public class UrlShortener {
@@ -55,20 +56,27 @@ public class UrlShortener {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             if ("GET".equals(exchange.getRequestMethod())) {
-                String path = exchange.getRequestURI().getPath().substring(1);
-                Url url = Database.findByShortCode(path);
+                String query = exchange.getRequestURI().getQuery();
 
-                if (url != null) {
-                    exchange.getResponseHeaders().add("Location", url.originalUrl());
-                    exchange.sendResponseHeaders(302, -1); // Redirect
-                } else {
-                    String response = "URL não encontrada";
-                    exchange.sendResponseHeaders(404, response.getBytes().length);
-                    exchange.getResponseBody().write(response.getBytes());
-                    exchange.getResponseBody().close();
-                    return;
+                if (query != null) {
+                    String[] params = query.split("=");
+                    String path = params[0];
+                    String shortCode = params[1];
+
+                    if (Objects.equals(path, "shortCode")) {
+                        Url url = Database.findByShortCode(shortCode);
+
+                        if (url != null) {
+                            exchange.getResponseHeaders().add("Location", url.originalUrl());
+                            exchange.sendResponseHeaders(302, -1); // Redirect
+                        } else {
+                            String response = "URL não encontrada";
+                            exchange.sendResponseHeaders(404, response.getBytes().length);
+                            exchange.getResponseBody().write(response.getBytes());
+                        }
+                        exchange.getResponseBody().close();
+                    }
                 }
-                exchange.getResponseBody().close();
             } else {
                 exchange.sendResponseHeaders(405, -1); // Method Not Allowed
             }
