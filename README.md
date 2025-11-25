@@ -13,10 +13,11 @@
 - [ ] Create relational table with url info (id, url_id, creation_date, clicks, updated_at, etc)
 - [ ] Add params in properties file
 - [ ] Implement cache (redis, caffeine, etc)
+- [X] Docker
 
 ### To bring up the project
 
-- Docker and Docker-compose
+- ~~Docker and Docker-compose~~
 - Virtual Threads
 - Queue
 - Use my kafka service (notification)
