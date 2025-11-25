@@ -9,12 +9,26 @@ import java.sql.Timestamp;
 import java.time.Instant;
 
 public class Database {
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/urlshortener";
-    private static final String DB_USER = "lucas";
-    private static final String DB_PASSWORD = "244000";
-
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+
+        String url  = System.getenv("DB_URL");
+        String user = System.getenv("DB_USER");
+        String pass = System.getenv("DB_PASSWORD");
+
+        if (url == null || user == null || pass == null) {
+            throw new RuntimeException(
+                    "Variáveis de ambiente não configuradas: " +
+                            "DB_URL=" + url + ", DB_USER=" + user + ", DB_PASSWORD=" + pass
+            );
+        }
+
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Driver PostgreSQL não encontrado.", e);
+        }
+
+        return DriverManager.getConnection(url, user, pass);
     }
 
     public static void save(Url url) {
