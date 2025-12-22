@@ -1,4 +1,7 @@
-package org.lomeu;
+package org.lomeu.infrastructure.database;
+
+import org.lomeu.config.AppConfig;
+import org.lomeu.domain.Url;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -7,28 +10,28 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.ZoneId;
 
 public class Database {
-    public static Connection getConnection() throws SQLException {
 
-        String url  = System.getenv("DB_URL");
-        String user = System.getenv("DB_USER");
-        String pass = System.getenv("DB_PASSWORD");
-
-        if (url == null || user == null || pass == null) {
-            throw new RuntimeException(
-                    "Variáveis de ambiente não configuradas: " +
-                            "DB_URL=" + url + ", DB_USER=" + user + ", DB_PASSWORD=" + pass
+    private static final String URL =
+            System.getenv().getOrDefault(
+                    "DB_URL",
+                    "jdbc:postgresql://localhost:5433/urlshortener"
             );
-        }
 
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Driver PostgreSQL não encontrado.", e);
-        }
+    private static final String USER =
+            System.getenv().getOrDefault("DB_USER", "lucas");
 
-        return DriverManager.getConnection(url, user, pass);
+    private static final String PASS =
+            System.getenv().getOrDefault("DB_PASSWORD", "pass");
+
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(
+                AppConfig.dbUrl(),
+                AppConfig.dbUser(),
+                AppConfig.dbPassword()
+        );
     }
 
     public static void save(Url url) {
@@ -58,8 +61,8 @@ public class Database {
                     response.getString("short_code"),
                     response.getString("original_url"),
                     response.getInt("clicks"),
-                    response.getString("creation_date"),
-                    response.getString("updated_at")
+                    response.getTimestamp("creation_date").toInstant().atZone(ZoneId.systemDefault()),
+                    response.getTimestamp("updated_at").toInstant().atZone(ZoneId.systemDefault())
                 );
             }
         } catch (SQLException e) {
