@@ -1,44 +1,30 @@
-### TODO:
+## URL Shortener – Java 21 (Pure Java)
 
-- [ ] Add project description
-- [ ] Add excalidraw with architecture diagram
-- [ ] Implement index postgres
+URL Shortener implemented using:
+- Java 21 (Virtual Threads)
+- Hexagonal Architecture (Ports & Adapters)
+- JDBC + PostgreSQL
+- No Spring / No Framework
+
+### TODO ORDER LIST:
+- [ ] Create relational table
+- [ ] Create index in database for faster searches
+- [ ] Add params in properties/env
+- [ ] Hashing algorithm para short url
+- [ ] Endpoint to get url info (stats)
+
 - [ ] Unit tests
-- [ ] How scale horizontally or vertically
+- [ ] Add project description
+- [ ] Add architecture diagram (Hexagonal)
+
+- [ ] Implement cache (Caffeine → Redis)
+- [ ] Virtual Threads (documentation)
+- [ ] Queue (async click increment ou event)
+
+- [ ] Structured Logging
+- [ ] Monitoring (prometheus, grafana, etc)
+- [ ] Security best practices
+
+- [ ] How to scale horizontally or vertically
+- [ ] Kafka service (notification)
 - [ ] Add CI/CD
-- [ ] Add monitoring and logging
-- [ ] Add security best practices
-- [ ] Add more examples of usage
-- [ ] Endpoint to get url info (clicks, creation date, etc)
-- [ ] Create relational table with url info (id, url_id, creation_date, clicks, updated_at, etc)
-- [ ] Add params in properties file
-- [ ] Implement cache (redis, caffeine, etc)
-- [X] Docker
-
-### To bring up the project
-
-- ~~Docker and Docker-compose~~
-- Virtual Threads
-- Queue
-- Use my kafka service (notification)
-- Hashing algorithm (md5, sha256, etc) to generate short url
-
-## How to test v1
-
-1. Start gradle
-
-```
-./gradlew run
-```
-
-2. Run curl command
-
-```
-curl -X POST http://localhost:8080/shorten -d "http://www.exemplo.com"
-```
-
-3. Get the original URL with the short URL
-
-```
-curl http://localhost:8080/1
-```
