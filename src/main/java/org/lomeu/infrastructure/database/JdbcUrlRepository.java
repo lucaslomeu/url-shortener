@@ -20,7 +20,6 @@ public class JdbcUrlRepository implements UrlRepository {
                 RETURNING *
             """;
 
-
         try (Connection connection = getConnection()) {
             PreparedStatement stmt = connection.prepareStatement(insertSql);
             Timestamp now = Timestamp.from(Instant.from(ZonedDateTime.now()));
@@ -48,9 +47,7 @@ public class JdbcUrlRepository implements UrlRepository {
 
     @Override
     public Optional<Url> findByShortCode(String shortCode) {
-        String sql = """
-                SELECT * FROM urls WHERE short_code = ?
-            """;
+        String sql = "SELECT * FROM urls WHERE short_code = ?";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
