@@ -8,24 +8,16 @@ public class AppConfig {
     private static final Properties props = new Properties();
 
     static {
-        try (InputStream in =
-                     AppConfig.class
-                             .getClassLoader()
-                             .getResourceAsStream("application.properties")) {
-
-            if (in != null) {
-                props.load(in);
-            }
+        try (InputStream in = AppConfig.class.getClassLoader().getResourceAsStream("application.properties")) {
+            if (in != null) props.load(in);
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao carregar config", e);
+            throw new RuntimeException("Failed to load application properties", e);
         }
     }
 
     private static String envOrProp(String env, String prop) {
         String value = System.getenv(env);
-        if (value != null && !value.isBlank()) {
-            return value;
-        }
+        if (value != null && !value.isBlank()) return value;
         return props.getProperty(prop);
     }
 

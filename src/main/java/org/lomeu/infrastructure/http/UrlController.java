@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
-
 public class UrlController {
 
     public static void start(int port, UrlUseCase service) throws IOException {
@@ -83,33 +82,6 @@ public class UrlController {
             );
         });
 
-
-        // Cada request HTTP roda em uma Virtual Thread
-        // Pq eh perfeito pro meu urlShortener
-//        Com threads normais:
-//        thread do SO fica bloqueada esperando o DB
-
-//        Com Virtual Threads:
-//        JVM desacopla a thread
-//        enquanto espera o DB:
-//        a carrier thread é liberada
-//        outra virtual thread roda
-//
-//📌 Bloqueio vira barato
-
-//        QUANDO VIRTUAL THREADS FAZEM SENTIDO
-//
-//✔ Muito I/O (HTTP + DB)
-//✔ Muitas conexões simultâneas
-//✔ Baixo uso de CPU
-//✔ APIs simples (como a sua)
-//
-//👉 URL Shortener é caso clássico'
-
-//        “Usei Virtual Threads para escalar concorrência I/O-bound
-//        mantendo modelo imperativo simples, sem introduzir complexidade de programação reativa.”
-
-//        Virtual Thread permite seu programa atender muita gente ao mesmo tempo sem travar, mesmo esperando banco ou rede.
         server.setExecutor(
             Executors.newVirtualThreadPerTaskExecutor()
         );
