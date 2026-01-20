@@ -1,8 +1,9 @@
-CREATE TABLE IF NOT EXISTS urls (
+CREATE TABLE urls (
     id BIGSERIAL PRIMARY KEY,
 
-    short_code VARCHAR(20) NOT NULL,
+    short_code VARCHAR(10) NOT NULL UNIQUE,
     original_url TEXT NOT NULL,
+    original_url_hash CHAR(64) NOT NULL UNIQUE,
 
     clicks INT NOT NULL DEFAULT 0,
 
