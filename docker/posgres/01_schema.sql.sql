@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS urls (
+    id BIGSERIAL PRIMARY KEY,
+
+    short_code VARCHAR(20) NOT NULL,
+    original_url TEXT NOT NULL,
+
+    clicks INT NOT NULL DEFAULT 0,
+
+    creation_date TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
