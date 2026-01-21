@@ -7,8 +7,8 @@ URL Shortener implemented using:
 - No Spring / No Framework
 
 ### TODO ORDER LIST:
-- [ ] Create relational table
-- [ ] Create index in database for faster searches
+- [X] Create relational table
+- [X] Create index in database for faster searches
 - [ ] Add params in properties/env
 - [ ] Hashing algorithm para short url
 - [ ] Endpoint to get url info (stats)

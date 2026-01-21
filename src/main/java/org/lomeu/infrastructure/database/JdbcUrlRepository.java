@@ -36,6 +36,7 @@ public class JdbcUrlRepository implements UrlRepository {
                 rs.getInt("id"),
                 rs.getString("short_code"),
                 rs.getString("original_url"),
+                rs.getString("original_url_hash"),
                 rs.getInt("clicks"),
                 rs.getTimestamp("creation_date").toInstant().atZone(ZonedDateTime.now().getZone()),
                 rs.getTimestamp("updated_at").toInstant().atZone(ZonedDateTime.now().getZone())
@@ -61,6 +62,34 @@ public class JdbcUrlRepository implements UrlRepository {
                 rs.getInt("id"),
                 rs.getString("short_code"),
                 rs.getString("original_url"),
+                rs.getString("original_url_hash"),
+                rs.getInt("clicks"),
+                rs.getTimestamp("creation_date").toInstant().atZone(ZonedDateTime.now().getZone()),
+                rs.getTimestamp("updated_at").toInstant().atZone(ZonedDateTime.now().getZone())
+            ));
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Optional<Url> findByOriginalUrlHash(String originalUrlHash) {
+        String sql = "SELECT * FROM urls WHERE original_url_hash = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, originalUrlHash);
+            ResultSet rs = ps.executeQuery();
+
+            if (!rs.next()) return Optional.empty();
+
+            return Optional.of(new Url(
+                rs.getInt("id"),
+                rs.getString("short_code"),
+                rs.getString("original_url"),
+                rs.getString("original_url_hash"),
                 rs.getInt("clicks"),
                 rs.getTimestamp("creation_date").toInstant().atZone(ZonedDateTime.now().getZone()),
                 rs.getTimestamp("updated_at").toInstant().atZone(ZonedDateTime.now().getZone())

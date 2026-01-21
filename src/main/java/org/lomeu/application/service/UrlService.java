@@ -1,32 +1,55 @@
 package org.lomeu.application.service;
 
+import org.lomeu.application.port.out.HashPort;
+import org.lomeu.application.port.out.ShortCodeGeneratorPort;
 import org.lomeu.application.port.in.UrlUseCase;
 import org.lomeu.application.port.out.UrlRepository;
 import org.lomeu.domain.Url;
 
 import java.time.ZonedDateTime;
+import java.util.Optional;
 
 public class UrlService implements UrlUseCase {
     private final UrlRepository urlRepository;
+    private final HashPort hashPort;
+    private final ShortCodeGeneratorPort codeGenerator;
 
-    public UrlService(UrlRepository urlRepository) {
+    public UrlService(UrlRepository urlRepository, HashPort hashPort, ShortCodeGeneratorPort codeGenerator) {
         this.urlRepository = urlRepository;
+        this.hashPort = hashPort;
+        this.codeGenerator = codeGenerator;
     }
 
     @Override
     public Url create(String originalUrl) {
-        // Implementation here
-        String shortCode = generateShortCode();
-        Url url = new Url(
-            0,
-            shortCode,
-            originalUrl,
-            0,
-            ZonedDateTime.now(),
-            ZonedDateTime.now()
-        );
+        String hash = hashPort.hash(originalUrl);
 
-        return urlRepository.save(url);
+        Optional<Url> existing = urlRepository.findByOriginalUrlHash(hash);
+
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        while(true) {
+            try {
+                String shortCode = this.codeGenerator.generate(8);
+
+                Url url = new Url(
+                    0,
+                    shortCode,
+                    originalUrl,
+                    hash,
+                    0,
+                    ZonedDateTime.now(),
+                    ZonedDateTime.now()
+                );
+
+                return urlRepository.save(url);
+            } catch (Exception e) {
+                // Assume exception is due to shortCode collision, retry
+            }
+        }
+
     }
 
     @Override
@@ -43,8 +66,4 @@ public class UrlService implements UrlUseCase {
         return urlRepository.findByShortCode(shortCode).orElse(null);
     }
 
-    private String generateShortCode() {
-        // placeholder → entra Base62 depois
-        return Long.toHexString(System.nanoTime());
-    }
 }

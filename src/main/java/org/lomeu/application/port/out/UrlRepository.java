@@ -10,5 +10,7 @@ public interface UrlRepository {
 
     Optional<Url> findByShortCode(String shortCode);
 
+    Optional<Url> findByOriginalUrlHash(String originalUrlHash);
+
     void incrementClicks(String shortCode);
 }
