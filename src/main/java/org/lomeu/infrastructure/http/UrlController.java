@@ -32,8 +32,8 @@ public class UrlController {
                     StandardCharsets.UTF_8
                 );
 
-                String originalUrl = extractUrl(body);
-                Url url = service.create(originalUrl);
+                String longUrl = extractUrl(body);
+                Url url = service.create(longUrl);
 
                 send(exchange, 201, "{\"shortCode\":\"" + url.shortCode() + "\"}");
             } else {
@@ -53,33 +53,7 @@ public class UrlController {
 
             Url url = service.getByShortCode(shortCode);
 
-            send(exchange, 302, url.originalUrl());
-        });
-
-
-        server.createContext(apiPrefix + "/stats/{shortCode}", exchange -> {
-            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                send(exchange, 405, "Method Not Allowed");
-                return;
-            }
-
-            String query = exchange.getRequestURI().getQuery(); // shortCode=abc
-            String shortCode = query.split("=")[1];
-
-            Url url = service.getInfo(shortCode);
-
-            send(exchange, 200, """
-                {
-                  "shortCode":"%s",
-                  "originalUrl":"%s",
-                  "clicks":%d
-                }
-                """.formatted(
-                        url.shortCode(),
-                        url.originalUrl(),
-                        url.clicks()
-                    )
-            );
+            send(exchange, 302, url.longUrl());
         });
 
         server.setExecutor(

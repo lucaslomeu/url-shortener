@@ -9,8 +9,4 @@ public interface UrlRepository {
     Url save(Url url);
 
     Optional<Url> findByShortCode(String shortCode);
-
-    Optional<Url> findByOriginalUrlHash(String originalUrlHash);
-
-    void incrementClicks(String shortCode);
 }

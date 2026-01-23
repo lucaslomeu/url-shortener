@@ -15,8 +15,8 @@ public class JdbcUrlRepository implements UrlRepository {
     @Override
     public Url save(Url url) {
         String insertSql = """
-                INSERT INTO urls (short_code, original_url, clicks, creation_date, updated_at)
-                VALUES (?, ?, 0, ?, ?)
+                INSERT INTO urls (short_code, long_url, created_at)
+                VALUES (?, ?, ?)
                 RETURNING *
             """;
 
@@ -25,9 +25,8 @@ public class JdbcUrlRepository implements UrlRepository {
             Timestamp now = Timestamp.from(Instant.from(ZonedDateTime.now()));
 
             stmt.setString(1, url.shortCode());
-            stmt.setString(2, url.originalUrl());
+            stmt.setString(2, url.longUrl());
             stmt.setTimestamp(3, now);
-            stmt.setTimestamp(4, now);
 
             ResultSet rs = stmt.executeQuery();
             rs.next();
@@ -35,11 +34,8 @@ public class JdbcUrlRepository implements UrlRepository {
             return new Url(
                 rs.getInt("id"),
                 rs.getString("short_code"),
-                rs.getString("original_url"),
-                rs.getString("original_url_hash"),
-                rs.getInt("clicks"),
-                rs.getTimestamp("creation_date").toInstant().atZone(ZonedDateTime.now().getZone()),
-                rs.getTimestamp("updated_at").toInstant().atZone(ZonedDateTime.now().getZone())
+                rs.getString("long_url"),
+                rs.getTimestamp("created_at").toInstant().atZone(ZonedDateTime.now().getZone())
             );
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -61,59 +57,9 @@ public class JdbcUrlRepository implements UrlRepository {
             return Optional.of(new Url(
                 rs.getInt("id"),
                 rs.getString("short_code"),
-                rs.getString("original_url"),
-                rs.getString("original_url_hash"),
-                rs.getInt("clicks"),
-                rs.getTimestamp("creation_date").toInstant().atZone(ZonedDateTime.now().getZone()),
-                rs.getTimestamp("updated_at").toInstant().atZone(ZonedDateTime.now().getZone())
+                rs.getString("long_url"),
+                rs.getTimestamp("created_at").toInstant().atZone(ZonedDateTime.now().getZone())
             ));
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public Optional<Url> findByOriginalUrlHash(String originalUrlHash) {
-        String sql = "SELECT * FROM urls WHERE original_url_hash = ?";
-
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, originalUrlHash);
-            ResultSet rs = ps.executeQuery();
-
-            if (!rs.next()) return Optional.empty();
-
-            return Optional.of(new Url(
-                rs.getInt("id"),
-                rs.getString("short_code"),
-                rs.getString("original_url"),
-                rs.getString("original_url_hash"),
-                rs.getInt("clicks"),
-                rs.getTimestamp("creation_date").toInstant().atZone(ZonedDateTime.now().getZone()),
-                rs.getTimestamp("updated_at").toInstant().atZone(ZonedDateTime.now().getZone())
-            ));
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void incrementClicks(String shortCode) {
-        String sql = """
-            UPDATE urls
-            SET clicks = clicks + 1, updated_at = ?
-            WHERE short_code = ?
-        """;
-
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setTimestamp(1, Timestamp.from(Instant.now()));
-            ps.setString(2, shortCode);
-            ps.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
