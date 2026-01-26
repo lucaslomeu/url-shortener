@@ -6,6 +6,7 @@ import org.lomeu.application.port.out.UrlRepository;
 import org.lomeu.domain.Url;
 
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
 public class UrlService implements UrlUseCase {
     private final UrlRepository urlRepository;
@@ -19,15 +20,16 @@ public class UrlService implements UrlUseCase {
     @Override
     public Url create(String longUrl) {
         String shortCode = this.codeGenerator.generate(8);
+        UUID uniqueId = UUID.randomUUID();
 
         Url url = new Url(
-            0,
+            uniqueId.toString(),
             shortCode,
             longUrl,
             ZonedDateTime.now()
         );
 
-        return urlRepository.save(url);
+        return urlRepository.create(url);
     }
 
     @Override

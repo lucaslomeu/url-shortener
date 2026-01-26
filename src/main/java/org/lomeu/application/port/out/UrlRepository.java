@@ -6,7 +6,7 @@ import java.util.Optional;
 
 public interface UrlRepository {
 
-    Url save(Url url);
+    Url create(Url url);
 
     Optional<Url> findByShortCode(String shortCode);
 }

@@ -19,6 +19,8 @@ public class UrlController {
 
         // API Endpoints with versioning
         String apiPrefix = "/api/v1";
+
+        // Endpoint to create a shortened URL
         server.createContext(apiPrefix + "/shorten", exchange -> {
             if ("POST".equals(exchange.getRequestMethod())) {
                 if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
@@ -41,7 +43,7 @@ public class UrlController {
             }
         });
 
-
+        // Endpoint to redirect to the original URL
         server.createContext(apiPrefix + "/", exchange -> {
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
                 send(exchange, 405, "Method Not Allowed");
@@ -61,7 +63,7 @@ public class UrlController {
         );
 
         server.start();
-        System.out.println("🚀 Server started on port " + port);
+        System.out.println("Server started on port " + port);
     }
 
     private static void send(HttpExchange ex, int status, String body)

@@ -6,7 +6,7 @@ import java.security.SecureRandom;
 
 public class ShortCodeGenerator implements ShortCodeGeneratorPort {
 
-    private static final String BASE62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     private static final SecureRandom RANDOM = new SecureRandom();
 
     @Override

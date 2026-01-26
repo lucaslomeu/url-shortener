@@ -9,6 +9,8 @@ URL Shortener implemented using:
 ### TODO ORDER LIST:
 - [X] Create relational table
 - [X] Create index in database for faster searches
+- [ ] Generate Unique ID for short URL
+- [ ] Hashing Base62 short URL without collisions using Unique ID
 - [ ] Add params in properties/env
 - [ ] Hashing algorithm para short url
 - [ ] Endpoint to get url info (stats)
