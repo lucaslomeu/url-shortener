@@ -6,9 +6,9 @@ import java.util.Optional;
 
 public interface UrlRepository {
 
-    Url create(Url url);
-
     long nextId();
+
+    Url insert(long id, String shortCode, String longUrl);
 
     Optional<Url> findByShortCode(String shortCode);
 }

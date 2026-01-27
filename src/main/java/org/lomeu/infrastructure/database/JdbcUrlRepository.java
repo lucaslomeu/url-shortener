@@ -4,50 +4,58 @@ import org.lomeu.application.port.out.UrlRepository;
 import org.lomeu.domain.Url;
 
 import java.sql.*;
-import java.time.ZonedDateTime;
 import java.util.Optional;
 
 import static org.lomeu.infrastructure.database.Database.getConnection;
 
 public class JdbcUrlRepository implements UrlRepository {
 
+    private static final String NEXT_ID_SQL = "SELECT nextval('urls_id_seq')";
+
     @Override
-    public Url create(Url url) {
-        String insertSql = """
-                INSERT INTO urls (id, short_code, long_url, created_at)
-                VALUES (?, ?, ?, ?)
-                RETURNING *
-            """;
+    public long nextId() {
+        try (Connection connection = getConnection();
+             PreparedStatement stmt = connection.prepareStatement(NEXT_ID_SQL);
+             ResultSet rs = stmt.executeQuery()) {
 
-        try (Connection connection = getConnection()) {
-            PreparedStatement stmt = connection.prepareStatement(insertSql);
-            stmt.setLong(1, url.id());
-            stmt.setString(2, url.shortCode());
-            stmt.setString(3, url.longUrl());
-            stmt.setTimestamp(4, Timestamp.from(url.createdAt().toInstant()));
+            if (!rs.next()) {
+                throw new SQLException("Failed to get next id");
+            }
+            return rs.getLong(1);
 
-            ResultSet rs = stmt.executeQuery();
-            rs.next();
-
-            return new Url(
-                rs.getLong("id"),
-                rs.getString("short_code"),
-                rs.getString("long_url"),
-                rs.getTimestamp("created_at").toInstant().atZone(url.createdAt().getZone())
-            );
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public long nextId() {
-        String sql = "SELECT nextval('url_id_seq')";
-        try (Connection connection = getConnection()) {
-            PreparedStatement stmt = connection.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery();
-            rs.next();
-            return rs.getLong(1);
+    public Url insert(long id, String shortCode, String longUrl) {
+        String sql = """
+            INSERT INTO urls (id, short_code, long_url)
+            VALUES (?, ?, ?)
+            RETURNING id, short_code, long_url, created_at
+            """;
+
+        try (Connection connection = getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+            stmt.setLong(1, id);
+            stmt.setString(2, shortCode);
+            stmt.setString(3, longUrl);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    throw new SQLException("Failed to insert URL");
+                }
+
+                return new Url(
+                        rs.getLong("id"),
+                        rs.getString("short_code"),
+                        rs.getString("long_url"),
+                        rs.getTimestamp("created_at").toInstant()
+                );
+            }
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -55,22 +63,29 @@ public class JdbcUrlRepository implements UrlRepository {
 
     @Override
     public Optional<Url> findByShortCode(String shortCode) {
-        String sql = "SELECT * FROM urls WHERE short_code = ?";
+        String sql = """
+            SELECT id, short_code, long_url, created_at
+            FROM urls
+            WHERE short_code = ?
+            """;
 
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection connection = getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
 
-            ps.setString(1, shortCode);
-            ResultSet rs = ps.executeQuery();
+            stmt.setString(1, shortCode);
 
-            if (!rs.next()) return Optional.empty();
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    return Optional.empty();
+                }
 
-            return Optional.of(new Url(
-                rs.getLong("id"),
-                rs.getString("short_code"),
-                rs.getString("long_url"),
-                rs.getTimestamp("created_at").toInstant().atZone(ZonedDateTime.now().getZone())
-            ));
+                return Optional.of(new Url(
+                        rs.getLong("id"),
+                        rs.getString("short_code"),
+                        rs.getString("long_url"),
+                        rs.getTimestamp("created_at").toInstant()
+                ));
+            }
 
         } catch (SQLException e) {
             throw new RuntimeException(e);

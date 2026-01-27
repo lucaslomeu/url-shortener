@@ -2,8 +2,10 @@ package org.lomeu.application.port.in;
 
 import org.lomeu.domain.Url;
 
+import java.util.Optional;
+
 public interface UrlUseCase {
     Url create(String longUrl);
 
-    Url getByShortCode(String shortCode);
+    Optional<Url> getByShortCode(String shortCode);
 }
