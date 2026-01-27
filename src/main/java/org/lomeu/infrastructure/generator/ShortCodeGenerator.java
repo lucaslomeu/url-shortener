@@ -7,14 +7,21 @@ import java.security.SecureRandom;
 public class ShortCodeGenerator implements ShortCodeGeneratorPort {
 
     private static final String BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     @Override
-    public String generate(int length) {
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(BASE62.charAt(RANDOM.nextInt(BASE62.length())));
+    public String generate(long id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("ID must be positive");
         }
-        return sb.toString();
+
+        StringBuilder sb = new StringBuilder();
+
+        while (id > 0) {
+            int remainder = (int) (id % 62);
+            sb.append(BASE62.charAt(remainder));
+            id /= 62;
+        }
+
+        return sb.reverse().toString();
     }
 }

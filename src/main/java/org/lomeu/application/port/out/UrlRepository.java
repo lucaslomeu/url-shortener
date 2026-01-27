@@ -8,5 +8,7 @@ public interface UrlRepository {
 
     Url create(Url url);
 
+    long nextId();
+
     Optional<Url> findByShortCode(String shortCode);
 }

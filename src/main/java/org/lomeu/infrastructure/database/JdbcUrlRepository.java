@@ -21,7 +21,7 @@ public class JdbcUrlRepository implements UrlRepository {
 
         try (Connection connection = getConnection()) {
             PreparedStatement stmt = connection.prepareStatement(insertSql);
-            stmt.setString(1, url.id());
+            stmt.setLong(1, url.id());
             stmt.setString(2, url.shortCode());
             stmt.setString(3, url.longUrl());
             stmt.setTimestamp(4, Timestamp.from(url.createdAt().toInstant()));
@@ -30,11 +30,24 @@ public class JdbcUrlRepository implements UrlRepository {
             rs.next();
 
             return new Url(
-                rs.getString("id"),
+                rs.getLong("id"),
                 rs.getString("short_code"),
                 rs.getString("long_url"),
                 rs.getTimestamp("created_at").toInstant().atZone(url.createdAt().getZone())
             );
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public long nextId() {
+        String sql = "SELECT nextval('url_id_seq')";
+        try (Connection connection = getConnection()) {
+            PreparedStatement stmt = connection.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getLong(1);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -53,7 +66,7 @@ public class JdbcUrlRepository implements UrlRepository {
             if (!rs.next()) return Optional.empty();
 
             return Optional.of(new Url(
-                rs.getString("id"),
+                rs.getLong("id"),
                 rs.getString("short_code"),
                 rs.getString("long_url"),
                 rs.getTimestamp("created_at").toInstant().atZone(ZonedDateTime.now().getZone())

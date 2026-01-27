@@ -4,9 +4,10 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.lomeu.application.port.in.UrlUseCase;
 import org.lomeu.domain.Url;
+import org.lomeu.infrastructure.http.dto.CreateShortUrlRequest;
 
 import java.io.*;
-import java.net.InetSocketAddress;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
@@ -22,24 +23,27 @@ public class UrlController {
 
         // Endpoint to create a shortened URL
         server.createContext(apiPrefix + "/shorten", exchange -> {
-            if ("POST".equals(exchange.getRequestMethod())) {
-                if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
-                    send(exchange, 405, "Method Not Allowed");
-                    return;
-                }
-
-                // body simples: {"url":"https://google.com"}
+            if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
+                send(exchange, 405, "Method Not Allowed");
+                return;
+            }
+            try {
                 String body = new String(
                     exchange.getRequestBody().readAllBytes(),
                     StandardCharsets.UTF_8
                 );
 
-                String longUrl = extractUrl(body);
-                Url url = service.create(longUrl);
+                CreateShortUrlRequest request = parse(body);
 
+                if (request.url().isEmpty() || !isValidUrl(request.url())) {
+                    send(exchange, 400, "Invalid URL");
+                    return;
+                }
+                Url url = service.create(request.url());
                 send(exchange, 201, "{\"shortCode\":\"" + url.shortCode() + "\"}");
-            } else {
-                exchange.sendResponseHeaders(405, -1);
+            } catch (Exception e) {
+                e.printStackTrace(); // Log error for debugging
+                send(exchange, 500, "Internal Server Error");
             }
         });
 
@@ -66,6 +70,31 @@ public class UrlController {
         System.out.println("Server started on port " + port);
     }
 
+    private static CreateShortUrlRequest parse(String body) {
+        body = body.trim();
+
+        if (!body.startsWith("{") || !body.endsWith("}")) {
+            throw new IllegalArgumentException("JSON inválido");
+        }
+
+        body = body.substring(1, body.length() - 1);
+
+        String[] parts = body.split(":", 2);
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("JSON inválido");
+        }
+
+        String key = parts[0].replace("\"", "").trim();
+        String value = parts[1].replace("\"", "").trim();
+
+        if (!key.equals("url") || value.isEmpty()) {
+            throw new IllegalArgumentException("Campo 'url' inválido");
+        }
+
+        return new CreateShortUrlRequest(value);
+    }
+
+
     private static void send(HttpExchange ex, int status, String body)
             throws IOException {
 
@@ -78,8 +107,12 @@ public class UrlController {
     }
 
     private static boolean isValidUrl(String url) {
-        Pattern pattern = Pattern.compile("^(https?://).+");
-        return pattern.matcher(url).matches();
+        try {
+            new URI(url);
+            return true;
+        }  catch (URISyntaxException e) {
+            return false;
+        }
     }
 
     // parsing tosco proposital (sem lib) tenho q arrumar
