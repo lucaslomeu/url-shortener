@@ -10,13 +10,14 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
 
 public class UrlController {
 
+    private static HttpServer server;
+
     public static void start(int port, UrlUseCase service) throws IOException {
         // Create HTTP server
-        HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+        server = HttpServer.create(new InetSocketAddress(port), 0);
 
         // API Endpoints with versioning
         String apiPrefix = "/api/v1";
@@ -68,6 +69,14 @@ public class UrlController {
 
         server.start();
         System.out.println("Server started on port " + port);
+    }
+
+    public static void stop() {
+        if (server != null) {
+            System.out.println("Stopping HTTP server...");
+            server.stop(5);
+            System.out.println("HTTP server stopped");
+        }
     }
 
     private static CreateShortUrlRequest parse(String body) {

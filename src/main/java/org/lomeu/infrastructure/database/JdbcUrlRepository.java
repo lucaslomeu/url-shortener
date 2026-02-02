@@ -36,28 +36,51 @@ public class JdbcUrlRepository implements UrlRepository {
             RETURNING id, short_code, long_url, created_at
             """;
 
-        try (Connection connection = getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection conn = null;
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false);
 
-            stmt.setLong(1, id);
-            stmt.setString(2, shortCode);
-            stmt.setString(3, longUrl);
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setLong(1, id);
+                stmt.setString(2, shortCode);
+                stmt.setString(3, longUrl);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (!rs.next()) {
-                    throw new SQLException("Failed to insert URL");
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (!rs.next()) {
+                        throw new SQLException("Failed to insert URL");
+                    }
+
+                    Url result = new Url(
+                            rs.getLong("id"),
+                            rs.getString("short_code"),
+                            rs.getString("long_url"),
+                            rs.getTimestamp("created_at").toInstant()
+                    );
+
+                    conn.commit();
+                    return result;
                 }
-
-                return new Url(
-                        rs.getLong("id"),
-                        rs.getString("short_code"),
-                        rs.getString("long_url"),
-                        rs.getTimestamp("created_at").toInstant()
-                );
             }
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
             throw new RuntimeException(e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 

@@ -1,27 +1,44 @@
 package org.lomeu.infrastructure.database;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.lomeu.config.AppConfig;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class Database {
 
-    private static final String URL =
-        System.getenv().get("DB_URL");
+    private static final HikariDataSource dataSource;
 
-    private static final String USER =
-        System.getenv().get("DB_USER");
+    static {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(AppConfig.dbUrl());
+        config.setUsername(AppConfig.dbUser());
+        config.setPassword(AppConfig.dbPassword());
 
-    private static final String PASS =
-        System.getenv().get("DB_PASSWORD");
+        // Connection pool settings
+        config.setMaximumPoolSize(50);
+        config.setMinimumIdle(10);
+        config.setConnectionTimeout(30000);
+        config.setIdleTimeout(600000);
+        config.setMaxLifetime(1800000);
+
+        // PostgreSQL optimizations
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+
+        dataSource = new HikariDataSource(config);
+    }
 
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(
-            AppConfig.dbUrl(),
-            AppConfig.dbUser(),
-            AppConfig.dbPassword()
-        );
+        return dataSource.getConnection();
+    }
+
+    public static void shutdown() {
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+        }
     }
 }
