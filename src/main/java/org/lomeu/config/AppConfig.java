@@ -32,4 +32,13 @@ public class AppConfig {
     public static String dbPassword() {
         return envOrProp("DB_PASSWORD", "db.password");
     }
+
+    public static String redisHost() {
+        return envOrProp("REDIS_HOST", "redis.host");
+    }
+
+    public static int redisPort() {
+        String port = envOrProp("REDIS_PORT", "redis.port");
+        return Integer.parseInt(port);
+    }
 }

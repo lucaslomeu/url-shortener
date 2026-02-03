@@ -1,0 +1,8 @@
+# Database Configuration
+db.url=jdbc:postgresql://localhost:5433/urlshortener
+db.user=postgres
+db.password=postgres
+
+# Redis Configuration
+redis.host=localhost
+redis.port=6379
