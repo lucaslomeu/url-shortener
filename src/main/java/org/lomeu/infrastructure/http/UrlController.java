@@ -9,6 +9,7 @@ import org.lomeu.infrastructure.http.dto.CreateShortUrlRequest;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 
 public class UrlController {
@@ -58,9 +59,14 @@ public class UrlController {
             String path = exchange.getRequestURI().getPath();
             String shortCode = path.replace("/api/v1/", "");
 
-            Url url = service.getByShortCode(shortCode);
+            Optional<Url> url = service.getByShortCode(shortCode);
 
-            send(exchange, 302, url.longUrl());
+            if (url.isEmpty()) {
+                send(exchange, 404, "URL not found");
+                return;
+            }
+
+            send(exchange, 302, url.get().longUrl());
         });
 
         server.setExecutor(
