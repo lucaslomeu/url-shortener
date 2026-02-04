@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpServer;
 import org.lomeu.application.port.in.UrlUseCase;
 import org.lomeu.config.AppConfig;
 import org.lomeu.domain.Url;
+import org.lomeu.domain.exception.InvalidUrlException;
 import org.lomeu.infrastructure.http.dto.CreateShortUrlRequest;
 import org.lomeu.infrastructure.middleware.RateLimiter;
 
@@ -47,12 +48,10 @@ public class UrlController {
 
                 CreateShortUrlRequest request = parse(body);
 
-                if (request.url().isEmpty() || !isValidUrl(request.url())) {
-                    send(exchange, 400, "Invalid URL");
-                    return;
-                }
                 Url url = service.create(request.url());
                 send(exchange, 201, "{\"shortCode\":\"" + url.shortCode() + "\"}");
+            } catch (InvalidUrlException e) {
+                send(exchange, 400, e.getMessage());
             } catch (Exception e) {
                 e.printStackTrace(); // Log error for debugging
                 send(exchange, 500, "Internal Server Error");
@@ -134,15 +133,6 @@ public class UrlController {
 
         try (OutputStream os = ex.getResponseBody()) {
             os.write(bytes);
-        }
-    }
-
-    private static boolean isValidUrl(String url) {
-        try {
-            new URI(url);
-            return true;
-        }  catch (URISyntaxException e) {
-            return false;
         }
     }
 
