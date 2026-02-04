@@ -82,7 +82,7 @@ public class UrlController {
                 return;
             }
 
-            send(exchange, 302, url.get().longUrl());
+            sendRedirect(exchange, url.get().longUrl());
         });
 
         server.setExecutor(
@@ -162,5 +162,11 @@ public class UrlController {
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(response.getBytes());
         }
+    }
+
+    private static void sendRedirect(HttpExchange exchange, String location) throws IOException {
+        exchange.getResponseHeaders().set("Location", location);
+        exchange.sendResponseHeaders(302, -1);
+        exchange.getResponseBody().close();
     }
 }
