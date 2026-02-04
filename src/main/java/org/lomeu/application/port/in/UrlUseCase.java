@@ -6,6 +6,5 @@ import java.util.Optional;
 
 public interface UrlUseCase {
     Url create(String longUrl);
-
     Optional<Url> getByShortCode(String shortCode);
 }

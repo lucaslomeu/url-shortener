@@ -41,4 +41,9 @@ public class AppConfig {
         String port = envOrProp("REDIS_PORT", "redis.port");
         return Integer.parseInt(port);
     }
+
+    public static int rateLimitRequestsPerMinute() {
+        String limit = envOrProp("RATE_LIMIT_REQUESTS_PER_MINUTE", "rate.limit.requests.per.minute");
+        return Integer.parseInt(limit);
+    }
 }

@@ -3,8 +3,10 @@ package org.lomeu.infrastructure.http;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.lomeu.application.port.in.UrlUseCase;
+import org.lomeu.config.AppConfig;
 import org.lomeu.domain.Url;
 import org.lomeu.infrastructure.http.dto.CreateShortUrlRequest;
+import org.lomeu.infrastructure.middleware.RateLimiter;
 
 import java.io.*;
 import java.net.*;
@@ -15,6 +17,7 @@ import java.util.concurrent.Executors;
 public class UrlController {
 
     private static HttpServer server;
+    private static final RateLimiter rateLimiter = new RateLimiter(AppConfig.rateLimitRequestsPerMinute());
 
     public static void start(int port, UrlUseCase service) throws IOException {
         // Create HTTP server
@@ -29,6 +32,13 @@ public class UrlController {
                 send(exchange, 405, "Method Not Allowed");
                 return;
             }
+
+            String clientIp = getClientIp(exchange);
+            if (!rateLimiter.allowRequest(clientIp)) {
+                sendRateLimitError(exchange);
+                return;
+            }
+
             try {
                 String body = new String(
                     exchange.getRequestBody().readAllBytes(),
@@ -53,6 +63,12 @@ public class UrlController {
         server.createContext(apiPrefix + "/", exchange -> {
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
                 send(exchange, 405, "Method Not Allowed");
+                return;
+            }
+
+            String clientIp = getClientIp(exchange);
+            if (!rateLimiter.allowRequest(clientIp)) {
+                sendRateLimitError(exchange);
                 return;
             }
 
@@ -130,10 +146,21 @@ public class UrlController {
         }
     }
 
-    // parsing tosco proposital (sem lib) tenho q arrumar
-    private static String extractUrl(String body) {
-        int start = body.indexOf(":") + 2;
-        int end = body.lastIndexOf("\"");
-        return body.substring(start, end);
+    private static String getClientIp(HttpExchange exchange) {
+        String forwarded = exchange.getRequestHeaders().getFirst("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return exchange.getRemoteAddress().getAddress().getHostAddress();
+    }
+
+    private static void sendRateLimitError(HttpExchange exchange) throws IOException {
+        String response = "{\"error\":\"Too many requests. Please try again later.\"}";
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.getResponseHeaders().set("Retry-After", "60");
+        exchange.sendResponseHeaders(429, response.getBytes().length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response.getBytes());
+        }
     }
 }

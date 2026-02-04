@@ -15,8 +15,10 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    implementation("org.postgresql:postgresql:42.7.5")
+    implementation("org.postgresql:postgresql:42.7.7")
     implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("redis.clients:jedis:5.1.0")
+    implementation("com.bucket4j:bucket4j-core:8.7.0")
 }
 
 tasks.test {
