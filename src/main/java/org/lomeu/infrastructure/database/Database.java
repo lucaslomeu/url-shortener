@@ -36,6 +36,14 @@ public class Database {
         return dataSource.getConnection();
     }
 
+    public static boolean isHealthy() {
+        try (Connection connection = getConnection()) {
+            return connection.isValid(2);
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
     public static void shutdown() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();

@@ -81,4 +81,13 @@ public class RedisCache implements CachePort {
             jedisPool.close();
         }
     }
+
+    public boolean healthCheck() {
+        try (Jedis jedis = jedisPool.getResource()) {
+            return "PONG".equalsIgnoreCase(jedis.ping());
+        } catch (Exception e) {
+            logger.warn("Redis health check failed", e);
+            return false;
+        }
+    }
 }

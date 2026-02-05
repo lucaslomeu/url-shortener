@@ -6,6 +6,8 @@ import org.lomeu.application.port.in.UrlUseCase;
 import org.lomeu.config.AppConfig;
 import org.lomeu.domain.Url;
 import org.lomeu.domain.exception.InvalidUrlException;
+import org.lomeu.infrastructure.cache.RedisCache;
+import org.lomeu.infrastructure.database.Database;
 import org.lomeu.infrastructure.http.dto.CreateShortUrlRequest;
 import org.lomeu.infrastructure.middleware.RateLimiter;
 import org.lomeu.infrastructure.exception.DatabaseException;
@@ -23,8 +25,10 @@ public class UrlController {
     private static HttpServer server;
     private static final RateLimiter rateLimiter = new RateLimiter(AppConfig.rateLimitRequestsPerMinute());
     private static final Logger logger = LoggerFactory.getLogger(UrlController.class);
+    private static RedisCache redisCache;
 
-    public static void start(int port, UrlUseCase service) throws IOException {
+    public static void start(int port, UrlUseCase service, RedisCache cache) throws IOException {
+        redisCache = cache;
         // Create HTTP server
         server = HttpServer.create(new InetSocketAddress(port), 0);
 
@@ -97,6 +101,29 @@ public class UrlController {
                 logger.error("Unexpected error on redirect", e);
                 send(exchange, 500, "Internal Server Error");
             }
+        });
+
+        server.createContext("/health", exchange -> {
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                send(exchange, 405, "Method Not Allowed");
+                return;
+            }
+
+            boolean dbHealthy = Database.isHealthy();
+            boolean redisHealthy = redisCache != null && redisCache.healthCheck();
+
+            String status = (dbHealthy && redisHealthy) ? "UP" : "DOWN";
+            int statusCode = (dbHealthy && redisHealthy) ? 200 : 503;
+
+            String response = String.format(
+                "{\"status\":\"%s\",\"database\":\"%s\",\"cache\":\"%s\"}",
+                status,
+                dbHealthy ? "UP" : "DOWN",
+                redisHealthy ? "UP" : "DOWN"
+            );
+
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            send(exchange, statusCode, response);
         });
 
         server.setExecutor(

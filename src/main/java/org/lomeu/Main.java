@@ -43,6 +43,6 @@ public class Main {
         UrlUseCase service = new UrlService(cachedRepository, generator, new UrlValidator());
 
         logger.info("Starting URL Shortener...");
-        UrlController.start(8080, service);
+        UrlController.start(8080, service, redisCache);
     }
 }
