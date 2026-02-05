@@ -171,6 +171,7 @@ public class UrlController {
             throws IOException {
 
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        addSecurityHeaders(ex);
         ex.sendResponseHeaders(status, bytes.length);
 
         try (OutputStream os = ex.getResponseBody()) {
@@ -188,6 +189,7 @@ public class UrlController {
 
     private static void sendRateLimitError(HttpExchange exchange) throws IOException {
         String response = "{\"error\":\"Too many requests. Please try again later.\"}";
+        addSecurityHeaders(exchange);
         exchange.getResponseHeaders().set("Content-Type", "application/json");
         exchange.getResponseHeaders().set("Retry-After", "60");
         exchange.sendResponseHeaders(429, response.getBytes().length);
@@ -197,8 +199,18 @@ public class UrlController {
     }
 
     private static void sendRedirect(HttpExchange exchange, String location) throws IOException {
+        addSecurityHeaders(exchange);
         exchange.getResponseHeaders().set("Location", location);
         exchange.sendResponseHeaders(302, -1);
         exchange.getResponseBody().close();
+    }
+
+    private static void addSecurityHeaders(HttpExchange exchange) {
+        exchange.getResponseHeaders().set("X-Content-Type-Options", "nosniff");
+        exchange.getResponseHeaders().set("X-Frame-Options", "DENY");
+        exchange.getResponseHeaders().set("X-XSS-Protection", "1; mode=block");
+        exchange.getResponseHeaders().set("Strict-Transport-Security", "max-age=31536000");
+        exchange.getResponseHeaders().set("Content-Security-Policy", "default-src 'self'");
+        exchange.getResponseHeaders().set("Referrer-Policy", "no-referrer");
     }
 }
