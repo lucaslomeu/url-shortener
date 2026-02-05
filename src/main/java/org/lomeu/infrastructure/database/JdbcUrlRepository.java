@@ -6,11 +6,16 @@ import org.lomeu.domain.Url;
 import java.sql.*;
 import java.util.Optional;
 
+import org.lomeu.infrastructure.exception.DatabaseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static org.lomeu.infrastructure.database.Database.getConnection;
 
 public class JdbcUrlRepository implements UrlRepository {
 
     private static final String NEXT_ID_SQL = "SELECT nextval('urls_id_seq')";
+    private static final Logger logger = LoggerFactory.getLogger(JdbcUrlRepository.class);
 
     @Override
     public long nextId() {
@@ -24,7 +29,7 @@ public class JdbcUrlRepository implements UrlRepository {
             return rs.getLong(1);
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DatabaseException("Failed to get next id", e);
         }
     }
 
@@ -68,17 +73,17 @@ public class JdbcUrlRepository implements UrlRepository {
                 try {
                     conn.rollback();
                 } catch (SQLException ex) {
-                    ex.printStackTrace();
+                    logger.error("Failed to rollback transaction", ex);
                 }
             }
-            throw new RuntimeException(e);
+            throw new DatabaseException("Failed to insert URL", e);
         } finally {
             if (conn != null) {
                 try {
                     conn.setAutoCommit(true);
                     conn.close();
                 } catch (SQLException e) {
-                    e.printStackTrace();
+                    logger.warn("Failed to close connection cleanly", e);
                 }
             }
         }
@@ -111,7 +116,7 @@ public class JdbcUrlRepository implements UrlRepository {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DatabaseException("Failed to find URL by short code", e);
         }
     }
 }

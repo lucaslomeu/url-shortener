@@ -2,6 +2,8 @@ package org.lomeu.infrastructure.cache;
 
 import org.lomeu.application.port.out.CachePort;
 import org.lomeu.domain.Url;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -15,6 +17,7 @@ public class RedisCache implements CachePort {
     private static final String KEY_PREFIX = "url:";
 
     private final JedisPool jedisPool;
+    private static final Logger logger = LoggerFactory.getLogger(RedisCache.class);
 
     public RedisCache(String host, int port) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
@@ -49,7 +52,7 @@ public class RedisCache implements CachePort {
             ));
 
         } catch (Exception e) {
-            System.err.println("Redis error on GET: " + e.getMessage());
+            logger.warn("Redis error on GET", e);
             return Optional.empty();
         }
     }
@@ -69,7 +72,7 @@ public class RedisCache implements CachePort {
             jedis.setex(key, TTL_SECONDS, value);
 
         } catch (Exception e) {
-            System.err.println("Redis error on PUT: " + e.getMessage());
+            logger.warn("Redis error on PUT", e);
         }
     }
 

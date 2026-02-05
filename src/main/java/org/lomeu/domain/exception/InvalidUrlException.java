@@ -1,6 +1,6 @@
 package org.lomeu.domain.exception;
 
-public class InvalidUrlException extends RuntimeException {
+public class InvalidUrlException extends UrlShortenerException {
     public InvalidUrlException(String message) {
         super(message);
     }

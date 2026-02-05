@@ -8,6 +8,9 @@ import org.lomeu.domain.Url;
 import org.lomeu.domain.exception.InvalidUrlException;
 import org.lomeu.infrastructure.http.dto.CreateShortUrlRequest;
 import org.lomeu.infrastructure.middleware.RateLimiter;
+import org.lomeu.infrastructure.exception.DatabaseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.*;
@@ -19,6 +22,7 @@ public class UrlController {
 
     private static HttpServer server;
     private static final RateLimiter rateLimiter = new RateLimiter(AppConfig.rateLimitRequestsPerMinute());
+    private static final Logger logger = LoggerFactory.getLogger(UrlController.class);
 
     public static void start(int port, UrlUseCase service) throws IOException {
         // Create HTTP server
@@ -52,8 +56,11 @@ public class UrlController {
                 send(exchange, 201, "{\"shortCode\":\"" + url.shortCode() + "\"}");
             } catch (InvalidUrlException e) {
                 send(exchange, 400, e.getMessage());
+            } catch (DatabaseException e) {
+                logger.error("Database error on shorten", e);
+                send(exchange, 500, "Internal Server Error");
             } catch (Exception e) {
-                e.printStackTrace(); // Log error for debugging
+                logger.error("Unexpected error on shorten", e);
                 send(exchange, 500, "Internal Server Error");
             }
         });
@@ -71,17 +78,25 @@ public class UrlController {
                 return;
             }
 
-            String path = exchange.getRequestURI().getPath();
-            String shortCode = path.replace("/api/v1/", "");
+            try {
+                String path = exchange.getRequestURI().getPath();
+                String shortCode = path.replace("/api/v1/", "");
 
-            Optional<Url> url = service.getByShortCode(shortCode);
+                Optional<Url> url = service.getByShortCode(shortCode);
 
-            if (url.isEmpty()) {
-                send(exchange, 404, "URL not found");
-                return;
+                if (url.isEmpty()) {
+                    send(exchange, 404, "URL not found");
+                    return;
+                }
+
+                sendRedirect(exchange, url.get().longUrl());
+            } catch (DatabaseException e) {
+                logger.error("Database error on redirect", e);
+                send(exchange, 500, "Internal Server Error");
+            } catch (Exception e) {
+                logger.error("Unexpected error on redirect", e);
+                send(exchange, 500, "Internal Server Error");
             }
-
-            sendRedirect(exchange, url.get().longUrl());
         });
 
         server.setExecutor(
@@ -89,14 +104,14 @@ public class UrlController {
         );
 
         server.start();
-        System.out.println("Server started on port " + port);
+        logger.info("Server started on port {}", port);
     }
 
     public static void stop() {
         if (server != null) {
-            System.out.println("Stopping HTTP server...");
+            logger.info("Stopping HTTP server...");
             server.stop(5);
-            System.out.println("HTTP server stopped");
+            logger.info("HTTP server stopped");
         }
     }
 
