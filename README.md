@@ -1,4 +1,4 @@
-# URL Shortener — Hexagonal Architecture (Java 21)
+# URL Shortener
 
 Shortens URLs and redirects users to the original.
 
