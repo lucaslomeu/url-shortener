@@ -107,6 +107,7 @@ public class UrlValidator {
         }
 
         if ("::1".equals(host)
+            || "0:0:0:0:0:0:0:1".equals(host)
             || host.startsWith("fc")
             || host.startsWith("fd")) {
             return true;

@@ -5,17 +5,32 @@ import org.lomeu.domain.Url;
 
 import java.sql.*;
 import java.util.Optional;
+import javax.sql.DataSource;
 
 import org.lomeu.infrastructure.exception.DatabaseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.lomeu.infrastructure.database.Database.getConnection;
-
 public class JdbcUrlRepository implements UrlRepository {
 
     private static final String NEXT_ID_SQL = "SELECT nextval('urls_id_seq')";
     private static final Logger logger = LoggerFactory.getLogger(JdbcUrlRepository.class);
+    private final DataSource dataSource;
+
+    public JdbcUrlRepository() {
+        this.dataSource = null;
+    }
+
+    public JdbcUrlRepository(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    private Connection getConnection() throws SQLException {
+        if (dataSource != null) {
+            return dataSource.getConnection();
+        }
+        return Database.getConnection();
+    }
 
     @Override
     public long nextId() {

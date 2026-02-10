@@ -1,105 +1,70 @@
-## Architecture Overview
+# URL Shortener — Hexagonal Architecture (Java 21)
 
-This project implements a URL Shortener using Hexagonal Architecture (Ports & Adapters),
-focusing on scalability, high availability, and fast redirection.
+Shortens URLs and redirects users to the original.
 
-The system is designed to:
-- Handle high read traffic with low latency
-- Scale horizontally
-- Be database and transport agnostic
+---
 
-## Architecture Diagram
+## Configuration
 
-The system follows Hexagonal Architecture principles.
-// TODO: Add architecture diagram here
+The application uses a centralized configuration approach through `AppConfig.java`:
 
-- HTTP is an inbound adapter
-- JDBC/Postgres is an outbound adapter
-- Business rules live inside the domain and application layers
+### Configuration Priority
 
-## Key Design Decisions
-1. Why Hexagonal Architecture?
-   - Decouples business logic from infrastructure
-   - Allows replacing HTTP server, database or cache without impacting the core
-   - Improves testability
-2. Why 302 instead of 301 for redirection?
-   - 302 allows tracking click metrics
-   - 301 would be cached by browsers/CDNs, preventing accurate click counting
-   - Enables future cache layers without losing observability
+1. **Environment Variables** (highest priority)
+   - Used in production (Docker, Kubernetes, etc.)
+   - Override any properties file values
 
-## Data Model
+2. **application.properties** (fallback)
+   - Default values for local development
+   - Located at `src/main/resources/application.properties`
 
-Table: urls
+### Available Settings
 
-Fields:
-- id (BIGSERIAL, PK)
-- short_code (VARCHAR, UNIQUE)
-- original_url (TEXT)
-- clicks (INT)
-- creation_date (TIMESTAMP)
-- updated_at (TIMESTAMP)
+**Database:**
 
-## Indexing Strategy
+- `DB_URL` / `db.url` - PostgreSQL connection URL
+- `DB_USER` / `db.user` - Database username
+- `DB_PASSWORD` / `db.password` - Database password
 
-- Unique index on short_code for fast redirection
-- Optional index on original_url for deduplication
+**Redis:**
 
-## Caching Strategy (Planned)
+- `REDIS_HOST` / `redis.host` - Redis server hostname
+- `REDIS_PORT` / `redis.port` - Redis server port
 
-- Hot URLs (most accessed) will be cached
-- Cache key: short_code → original_url
-- Cache TTL based on access frequency
+**Rate Limiting:**
 
-## Scalability & Availability
-1. Write 
-   - Write-heavy operations are relatively low (1k/s)
-   - Can be scaled horizontally using stateless application nodes
-2. Read
-   - Read-heavy workload (~11k/s)
-   - Cache-first strategy ensures low latency
-3. Database
-   - Read replicas for scaling reads
-   - Primary node for writes
+- `RATE_LIMIT_REQUESTS_PER_MINUTE` / `rate.limit.requests.per.minute` - Requests per minute per IP (default: 100)
 
-## Observability (Planned)
+### Setup Instructions
 
-- Structured logging
-- Metrics:
-    - Redirect latency
-    - Top accessed URLs
-- Prometheus + Grafana
+**First-time setup:**
 
-## Security Considerations
+1. Copy example files:
 
-- Input validation for URLs
-- Rate limiting (future)
-- Protection against abuse (spam URLs)
+```bash
+cp src/main/resources/application.properties.example src/main/resources/application.properties
 
-## Roadmap
+cp .env.example .env
+```
 
-The following improvements are planned to evolve the system while preserving architectural boundaries:
+2. Edit the files with your local configuration:
+   - `application.properties` - for local development without Docker
+   - `.env` - for Docker Compose setup
 
-### TODO ORDER LIST:
-- [X] Create relational table
-- [X] Create index in database for faster searches
-- [ ] Generate Unique ID for short URL
-- [ ] Hashing Base62 short URL without collisions using Unique ID
-- [ ] Add params in properties/env
-- [ ] Hashing algorithm para short url
-- [ ] Endpoint to get url info (stats)
+---
 
-- [ ] Unit tests
-- [ ] Add project description
-- [ ] Add architecture diagram (Hexagonal)
+## Endpoints
 
-- [ ] Implement cache (Caffeine → Redis)
-- [ ] Virtual Threads (documentation)
-- [ ] Queue (async click increment ou event)
+**Create short URL**
 
-- [ ] Structured Logging
-- [ ] Monitoring (prometheus, grafana, etc)
-- [ ] Security best practices
+- `POST /api/v1/shorten`
 
-- [ ] How to scale horizontally or vertically
-- [ ] Kafka service (notification)
-- [ ] Add CI/CD
+**Redirect**
+
+- `GET /{shortCode}` (public)
+- `GET /api/v1/{shortCode}` (API)
+
+**Health & Metrics**
+
+- `GET /health`
+- `GET /metrics`

@@ -19,6 +19,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class UrlController {
 
@@ -26,6 +27,11 @@ public class UrlController {
     private static final RateLimiter rateLimiter = new RateLimiter(AppConfig.rateLimitRequestsPerMinute());
     private static final Logger logger = LoggerFactory.getLogger(UrlController.class);
     private static RedisCache redisCache;
+    private static final int MAX_BODY_BYTES = 8 * 1024;
+    private static final AtomicLong totalRequests = new AtomicLong(0);
+    private static final AtomicLong totalShortens = new AtomicLong(0);
+    private static final AtomicLong totalRedirects = new AtomicLong(0);
+    private static final AtomicLong totalErrors = new AtomicLong(0);
 
     public static void start(int port, UrlUseCase service, RedisCache cache) throws IOException {
         redisCache = cache;
@@ -37,47 +43,49 @@ public class UrlController {
 
         // Endpoint to create a shortened URL
         server.createContext(apiPrefix + "/shorten", exchange -> {
+            totalRequests.incrementAndGet();
             if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
-                send(exchange, 405, "Method Not Allowed");
+                sendError(exchange, 405, "Method Not Allowed");
                 return;
             }
 
-            String clientIp = getClientIp(exchange);
-            if (!rateLimiter.allowRequest(clientIp)) {
+            if (!allowRequest(exchange)) {
                 sendRateLimitError(exchange);
                 return;
             }
 
             try {
-                String body = new String(
-                    exchange.getRequestBody().readAllBytes(),
-                    StandardCharsets.UTF_8
-                );
+                String body = readRequestBody(exchange);
 
                 CreateShortUrlRequest request = parse(body);
 
                 Url url = service.create(request.url());
-                send(exchange, 201, "{\"shortCode\":\"" + url.shortCode() + "\"}");
+                totalShortens.incrementAndGet();
+                sendJson(exchange, 201, "{\"shortCode\":\"" + escapeJson(url.shortCode()) + "\"}");
+            } catch (PayloadTooLargeException e) {
+                sendError(exchange, 413, "Request body too large");
+            } catch (IllegalArgumentException e) {
+                sendError(exchange, 400, e.getMessage());
             } catch (InvalidUrlException e) {
-                send(exchange, 400, e.getMessage());
+                sendError(exchange, 400, e.getMessage());
             } catch (DatabaseException e) {
                 logger.error("Database error on shorten", e);
-                send(exchange, 500, "Internal Server Error");
+                sendError(exchange, 500, "Internal Server Error");
             } catch (Exception e) {
                 logger.error("Unexpected error on shorten", e);
-                send(exchange, 500, "Internal Server Error");
+                sendError(exchange, 500, "Internal Server Error");
             }
         });
 
         // Endpoint to redirect to the original URL
         server.createContext(apiPrefix + "/", exchange -> {
+            totalRequests.incrementAndGet();
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                send(exchange, 405, "Method Not Allowed");
+                sendError(exchange, 405, "Method Not Allowed");
                 return;
             }
 
-            String clientIp = getClientIp(exchange);
-            if (!rateLimiter.allowRequest(clientIp)) {
+            if (!allowRequest(exchange)) {
                 sendRateLimitError(exchange);
                 return;
             }
@@ -89,23 +97,64 @@ public class UrlController {
                 Optional<Url> url = service.getByShortCode(shortCode);
 
                 if (url.isEmpty()) {
-                    send(exchange, 404, "URL not found");
+                    sendError(exchange, 404, "URL not found");
                     return;
                 }
 
+                totalRedirects.incrementAndGet();
                 sendRedirect(exchange, url.get().longUrl());
             } catch (DatabaseException e) {
                 logger.error("Database error on redirect", e);
-                send(exchange, 500, "Internal Server Error");
+                sendError(exchange, 500, "Internal Server Error");
             } catch (Exception e) {
                 logger.error("Unexpected error on redirect", e);
-                send(exchange, 500, "Internal Server Error");
+                sendError(exchange, 500, "Internal Server Error");
+            }
+        });
+
+        server.createContext("/", exchange -> {
+            totalRequests.incrementAndGet();
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendError(exchange, 405, "Method Not Allowed");
+                return;
+            }
+
+            if (!allowRequest(exchange)) {
+                sendRateLimitError(exchange);
+                return;
+            }
+
+            try {
+                String path = exchange.getRequestURI().getPath();
+                String shortCode = path.startsWith("/") ? path.substring(1) : path;
+
+                if (shortCode.isBlank()) {
+                    sendError(exchange, 404, "URL not found");
+                    return;
+                }
+
+                Optional<Url> url = service.getByShortCode(shortCode);
+
+                if (url.isEmpty()) {
+                    sendError(exchange, 404, "URL not found");
+                    return;
+                }
+
+                totalRedirects.incrementAndGet();
+                sendRedirect(exchange, url.get().longUrl());
+            } catch (DatabaseException e) {
+                logger.error("Database error on root redirect", e);
+                sendError(exchange, 500, "Internal Server Error");
+            } catch (Exception e) {
+                logger.error("Unexpected error on root redirect", e);
+                sendError(exchange, 500, "Internal Server Error");
             }
         });
 
         server.createContext("/health", exchange -> {
+            totalRequests.incrementAndGet();
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                send(exchange, 405, "Method Not Allowed");
+                sendError(exchange, 405, "Method Not Allowed");
                 return;
             }
 
@@ -122,8 +171,24 @@ public class UrlController {
                 redisHealthy ? "UP" : "DOWN"
             );
 
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
-            send(exchange, statusCode, response);
+            sendJson(exchange, statusCode, response);
+        });
+
+        server.createContext("/metrics", exchange -> {
+            totalRequests.incrementAndGet();
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                sendError(exchange, 405, "Method Not Allowed");
+                return;
+            }
+
+            String response = String.format(
+                "{\"requests\":%d,\"shortens\":%d,\"redirects\":%d,\"errors\":%d}",
+                totalRequests.get(),
+                totalShortens.get(),
+                totalRedirects.get(),
+                totalErrors.get()
+            );
+            sendJson(exchange, 200, response);
         });
 
         server.setExecutor(
@@ -167,15 +232,20 @@ public class UrlController {
     }
 
 
-    private static void send(HttpExchange ex, int status, String body)
+    private static void sendJson(HttpExchange ex, int status, String body)
             throws IOException {
 
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         addSecurityHeaders(ex);
+        ex.getResponseHeaders().set("Content-Type", "application/json");
         ex.sendResponseHeaders(status, bytes.length);
 
         try (OutputStream os = ex.getResponseBody()) {
             os.write(bytes);
+        }
+
+        if (status >= 400) {
+            totalErrors.incrementAndGet();
         }
     }
 
@@ -188,13 +258,53 @@ public class UrlController {
     }
 
     private static void sendRateLimitError(HttpExchange exchange) throws IOException {
-        String response = "{\"error\":\"Too many requests. Please try again later.\"}";
-        addSecurityHeaders(exchange);
-        exchange.getResponseHeaders().set("Content-Type", "application/json");
         exchange.getResponseHeaders().set("Retry-After", "60");
-        exchange.sendResponseHeaders(429, response.getBytes().length);
-        try (OutputStream os = exchange.getResponseBody()) {
-            os.write(response.getBytes());
+        sendError(exchange, 429, "Too many requests. Please try again later.");
+    }
+
+    private static void sendError(HttpExchange exchange, int status, String message) throws IOException {
+        String response = "{\"error\":\"" + escapeJson(message) + "\"}";
+        sendJson(exchange, status, response);
+    }
+
+    private static String readRequestBody(HttpExchange exchange) throws IOException {
+        try (InputStream inputStream = exchange.getRequestBody();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[1024];
+            int total = 0;
+            int read;
+            while ((read = inputStream.read(buffer)) != -1) {
+                total += read;
+                if (total > MAX_BODY_BYTES) {
+                    throw new PayloadTooLargeException();
+                }
+                outputStream.write(buffer, 0, read);
+            }
+            return outputStream.toString(StandardCharsets.UTF_8);
+        }
+    }
+
+    private static boolean allowRequest(HttpExchange exchange) {
+        rateLimiter.cleanup();
+        String clientIp = getClientIp(exchange);
+        return rateLimiter.allowRequest(clientIp);
+    }
+
+    private static String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t");
+    }
+
+    private static class PayloadTooLargeException extends RuntimeException {
+        private PayloadTooLargeException() {
+            super("Request body too large");
         }
     }
 
